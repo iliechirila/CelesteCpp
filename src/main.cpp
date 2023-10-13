@@ -121,7 +121,6 @@ int main()
         SM_TRACE("Test");
         SM_WARN("Warn");
         SM_ERROR("Error");
-        SM_ASSERT(false, "Assertion not hit");
     }
 
 
