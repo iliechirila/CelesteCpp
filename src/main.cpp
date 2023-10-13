@@ -1,3 +1,5 @@
+#include"game_engine_lib.h"
+
 
 // #########################################################################
 //                      Platform Globals
@@ -116,7 +118,12 @@ int main()
         // Update
         platform_update_window();
 
+        SM_TRACE("Test");
+        SM_WARN("Warn");
+        SM_ERROR("Error");
+        SM_ASSERT(false, "Assertion not hit");
     }
+
 
     return 0;
 }
