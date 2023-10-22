@@ -64,7 +64,6 @@ static PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback_ptr;
 void load_gl_functions()
 {
   // Load OpenGL Functions from the Operating System / Graphics Card
-  // Pointer to a FuNction called GLCREATEPROGRAM; PROC -> pointer to a function that we have to load from a library
   glCreateProgram_ptr = (PFNGLCREATEPROGRAMPROC)platform_load_gl_function("glCreateProgram");
   glDeleteTextures_ptr = (PFNGLDELETETEXTURESPROC)platform_load_gl_function("glDeleteTextures");
   glGenTextures_ptr = (PFNGLGENTEXTURESPROC)platform_load_gl_function("glGenTextures");

@@ -9,7 +9,7 @@
 //                      Windows Globals
 // #########################################################################
 static HWND window;
-
+static HDC dc;
 // #########################################################################
 //                      Platform Implementations
 // #########################################################################
@@ -21,6 +21,14 @@ LRESULT CALLBACK windows_window_callback(HWND window, UINT msg, WPARAM wParam, L
         case WM_CLOSE:
         {
             running = false;
+            break;
+        }
+        case WM_SIZE:
+        {
+            RECT rect = {};
+            GetClientRect(window, &rect);
+            input.screenSizeX = rect.right - rect.left;
+      input.screenSizeY = rect.bottom - rect.top;
             break;
         }
 
@@ -38,7 +46,7 @@ bool platform_create_window(int width, int height, char* title)
 {
     HINSTANCE instance = GetModuleHandleA(0); // instance we need when we register a window class
 
-    WNDCLASS wc = {};
+    WNDCLASSA wc = {};
     wc.hInstance  = instance;
     wc.hIcon = LoadIcon(instance, IDI_APPLICATION);
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);           // here we decide the look of the cursor 
@@ -73,6 +81,7 @@ bool platform_create_window(int width, int height, char* title)
                                     NULL);      // lpParam
         if (window == NULL)
         {
+			SM_ASSERT(false, "Failed to create Windows Window");
             return false;
         }
         
@@ -122,7 +131,7 @@ bool platform_create_window(int width, int height, char* title)
         // we need access to these functions' proc address for the reason below. But we can't use them without creating a DC in the 1st place
         wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)platform_load_gl_function("wglChoosePixelFormatARB");
         wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)platform_load_gl_function("wglCreateContextAttribsARB");
-        if (!wglChoosePixelFormatARB || !wglCreateContextAttribsARB)
+        if(!wglCreateContextAttribsARB || !wglChoosePixelFormatARB)
         {
             SM_ASSERT(false, "Failed to load OpenGL functions!");
             return false;
@@ -170,7 +179,7 @@ bool platform_create_window(int width, int height, char* title)
             SM_ASSERT(false, "Failed to create Windows Window!");
             return false;
         }
-        HDC dc = GetDC(window);
+        dc = GetDC(window);
         //this is just in case
         if(!dc)
         {
@@ -183,7 +192,7 @@ bool platform_create_window(int width, int height, char* title)
             WGL_DRAW_TO_WINDOW_ARB, 1,  // GL_TRUE
             WGL_SUPPORT_OPENGL_ARB, 1,
             WGL_DOUBLE_BUFFER_ARB,  1,
-            WGL_SWAP_COPY_ARB,      WGL_SWAP_COPY_ARB,
+            WGL_SWAP_METHOD_ARB,      WGL_SWAP_COPY_ARB,
             WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
             WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
             WGL_COLOR_BITS_ARB,     32,
@@ -218,7 +227,7 @@ bool platform_create_window(int width, int height, char* title)
             WGL_CONTEXT_MINOR_VERSION_ARB, 3,
             WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
             WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
-            0,
+            0
         };
 
         HGLRC rc = wglCreateContextAttribsARB(dc, 0, contextAttribs);
@@ -247,10 +256,10 @@ void platform_update_window()
         There is a queue of messages and we need to make sure we empty that queue.
         We peek one message, we fill in the data and we dispatch it via a callback
     */
-    while(PeekMessage(&msg, window, 0, 0, PM_REMOVE))
+    while(PeekMessageA(&msg, window, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
-        DispatchMessage(&msg);      // Calls the callback defined in up above (wc.lpfnWndProc)
+        DispatchMessageA(&msg);      // Calls the callback defined in up above (wc.lpfnWndProc)
     }
 }
 
@@ -271,4 +280,10 @@ void* platform_load_gl_function(char* funName)
         }
     }
     return (void*)proc;
+}
+
+
+void platform_swap_buffers()
+{
+    SwapBuffers(dc);
 }

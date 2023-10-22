@@ -17,10 +17,15 @@
 #ifdef _WIN32
 #define DEBUG_BREAK() __debugbreak()
 #elif __linux__
-#define DEBUG_BREAK() __building_debugtrap()
+#define DEBUG_BREAK() __builtin_debugtrap()
 #elif __APPLE__
 #define DEBUG_BREAK() __builtin_trap()
 #endif
+
+#define BIT(x) 1 << (x)
+#define KB(x)  ((unsigned long long)1024 * x)
+#define MB(x)  ((unsigned long long)1024 * KB(x))
+#define GB(x)  ((unsigned long long)1024 * MB(x))
 
 // #########################################################################
 //                      LOGGING
@@ -89,8 +94,9 @@ void _log(char* prefix, char* msg, TextColor textColor, Args... args)
     {                                   \
         SM_ERROR(msg, ##__VA_ARGS__);   \
         DEBUG_BREAK();                  \
+    	SM_ERROR("Assertion HIT!")    \
     }                                   \
-}                                       \
+}                                       
 
 
 // #########################################################################
@@ -127,10 +133,10 @@ char* bump_alloc(BumpAllocator* bumpAllocator, size_t size)
     char* result = nullptr;
 
     size_t allignedSize = (size + 7) & ~7;  // This makes sure the first 4 bits are 0
-    if(bumpAllocator->used + allignedSize < bumpAllocator->capacity)
+    if(bumpAllocator->used + allignedSize <= bumpAllocator->capacity)
     {
         result = bumpAllocator->memory + bumpAllocator->used;
-        bumpAllocator->used = allignedSize;
+        bumpAllocator->used += allignedSize;
     }
     else
     {
@@ -142,14 +148,14 @@ char* bump_alloc(BumpAllocator* bumpAllocator, size_t size)
 // #########################################################################
 //                      File I/O
 // #########################################################################
-long long get_timestamp(const char* file)
+long long get_timestamp(char* file)
 {
   struct stat file_stat = {};
   stat(file, &file_stat);
   return file_stat.st_mtime;
 }
 
-bool file_exists(const char* filePath)
+bool file_exists(char* filePath)
 {
   SM_ASSERT(filePath, "No filePath supplied!");
 
@@ -163,7 +169,7 @@ bool file_exists(const char* filePath)
   return true;
 }
 
-long get_file_size(const char* filePath)
+long get_file_size(char* filePath)
 {
   SM_ASSERT(filePath, "No filePath supplied!");
 
@@ -189,7 +195,7 @@ long get_file_size(const char* filePath)
 * memory and therefore want more control over where it 
 * is allocated
 */
-char* read_file(const char* filePath, int* fileSize, char* buffer)
+char* read_file(char* filePath, int* fileSize, char* buffer)
 {
   SM_ASSERT(filePath, "No filePath supplied!");
   SM_ASSERT(fileSize, "No fileSize supplied!");
@@ -215,7 +221,7 @@ char* read_file(const char* filePath, int* fileSize, char* buffer)
   return buffer;
 }
 
-char* read_file(const char* filePath, int* fileSize, BumpAllocator* bumpAllocator)
+char* read_file(char* filePath, int* fileSize, BumpAllocator* bumpAllocator)
 {
   char* file = nullptr;
   long fileSize2 = get_file_size(filePath);
@@ -230,7 +236,7 @@ char* read_file(const char* filePath, int* fileSize, BumpAllocator* bumpAllocato
   return file; 
 }
 
-void write_file(const char* filePath, char* buffer, int size)
+void write_file(char* filePath, char* buffer, int size)
 {
   SM_ASSERT(filePath, "No filePath supplied!");
   SM_ASSERT(buffer, "No buffer supplied!");
@@ -245,7 +251,7 @@ void write_file(const char* filePath, char* buffer, int size)
   fclose(file);
 }
 
-bool copy_file(const char* fileName, const char* outputName, char* buffer)
+bool copy_file(char* fileName, char* outputName, char* buffer)
 {
   int fileSize = 0;
   char* data = read_file(fileName, &fileSize, buffer);
@@ -269,7 +275,7 @@ bool copy_file(const char* fileName, const char* outputName, char* buffer)
   return true;
 }
 
-bool copy_file(const char* fileName, const char* outputName, BumpAllocator* bumpAllocator)
+bool copy_file(char* fileName, char* outputName, BumpAllocator* bumpAllocator)
 {
   char* file = 0;
   long fileSize2 = get_file_size(fileName);
